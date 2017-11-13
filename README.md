@@ -9,5 +9,5 @@ homonym tool is written in Erlang.
 List
 ----
 
-- [ermidi](ermidi.md)
+- [readsmf](readsmf.md)
 
