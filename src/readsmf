@@ -1,0 +1,25 @@
+#! /usr/bin/env escript
+%% %%%! debug
+-import(ermidi, [parse/1]).
+
+main([FileName|_]) ->
+    try
+	{S, MidiFile} = file:read_file(FileName),
+	case S of
+	    ok -> parse(MidiFile);
+	    _ -> io:format("can't load file ~s~n", [FileName])
+	end
+    catch
+	throw:Term -> io:format("THROW ~p~n", [Term]);
+	error:X -> io:format("ERROR ~p~n", [X]);
+	_:_ ->
+	    usage()
+    end;
+	
+main(_) ->
+    usage().
+
+
+usage() ->
+    io:format("readsmf FILENAME~n"),
+    halt(1).
