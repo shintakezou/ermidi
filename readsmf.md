@@ -21,7 +21,8 @@ Once you have `ermidi.beam`, you can run `readsmf` like this:
     ./readsmf path/to/a/midi/file.mid
 
 and likely it will work (on GNU/Linux systems and alike), provided it
-is executable and you are in the same folder where `ermidi.beam` is.
+is executable and you are in the same folder where `ermidi.beam` is, or
+it can locate it someway (solving these problems is up to you).
 
 
 Why

@@ -131,7 +131,7 @@ gm_note(Ch, Note) when Ch /= ?DRUM_CHANNEL ->
 				"E", "F", "F#", "G",
 				"G#", "A", "A#", "B"]) ++
 	integer_to_list((Note div 12) - 1);
-gm_note(_, _) ->
+gm_note(_Ch, _Note) ->
     "drum".
 
 
@@ -139,7 +139,7 @@ gm_note(_, _) ->
 
 gm_instrument(Ch, Program) when Ch /= ?DRUM_CHANNEL ->
     "an instrument";
-gm_instrument(_, _) ->
+gm_instrument(_Ch, _Program) ->
     "a drumset".
 
 %% -------		     
@@ -252,6 +252,10 @@ var_len(_) ->
 
 %% ----------------
 
+-define(META_TXT(K), 
+	<<Text:Len/binary, _/binary>> = Rest,
+	io:fwrite("~s ~s~n", [K, binary_to_list(Text)])).
+
 read_event(<<Meta:8, Type:8, Data/binary>>, _) when Meta == ?EV_META ->
     {ok, Len, Rest} = var_len(Data),
     case Type of
@@ -259,32 +263,23 @@ read_event(<<Meta:8, Type:8, Data/binary>>, _) when Meta == ?EV_META ->
 	    <<SeqNo:16, _/binary>> = Rest,
 	    io:fwrite("sequence number ~B~n", [SeqNo]);
 	1 -> % text event
-	    <<Text:Len/binary, _/binary>> = Rest,
-	    io:fwrite("text: ~s~n", [binary_to_list(Text)]);
+	    ?META_TXT("text");
 	2 -> % copyright notice
-	    <<Text:Len/binary, _/binary>> = Rest,
-	    io:fwrite("copyright: ~s~n", [binary_to_list(Text)]);
+	    ?META_TXT("copyright");
 	3 -> % seq/track name
-	    <<Text:Len/binary, _/binary>> = Rest,
-	    io:fwrite("sequence/track name: ~s~n", [binary_to_list(Text)]);
+	    ?META_TXT("sequence/track name");
 	4 -> % instrument name
-	    <<Text:Len/binary, _/binary>> = Rest,
-	    io:fwrite("instrument: ~s~n", [binary_to_list(Text)]);
+	    ?META_TXT("instrument");
 	5 -> % lyrics
-	    <<Text:Len/binary, _/binary>> = Rest,
-	    io:fwrite("lyrics: ~s~n", [binary_to_list(Text)]);
+	    ?META_TXT("lyrics");
 	6 -> % marker
-	    <<Text:Len/binary, _/binary>> = Rest,
-	    io:fwrite("marker: ~s~n", [binary_to_list(Text)]);
+	    ?META_TXT("marker");
 	7 -> % cue point
-	    <<Text:Len/binary, _/binary>> = Rest,
-	    io:fwrite("cue point: ~s~n", [binary_to_list(Text)]);
+	    ?META_TXT("cue point");
 	8 -> % program name
-	    <<Text:Len/binary, _/binary>> = Rest,
-	    io:fwrite("program name: ~s~n", [binary_to_list(Text)]);
+	    ?META_TXT("program name");
 	9 -> % device name
-	    <<Text:Len/binary, _/binary>> = Rest,
-	    io:fwrite("device name: ~s~n", [binary_to_list(Text)]);
+	    ?META_TXT("device name");
 	16#20 -> % midi channel prefix
 	    <<Prefix:8, _/binary>> = Rest,
 	    io:fwrite("channel prefix: ~B~n", [Prefix+1]);
@@ -409,7 +404,7 @@ read_event(<<Code:4, Msg:4, Data/binary>>, _) when Code == ?EV_SYSEX ->
 	14 ->
 	    io:fwrite("active sensing~n"),
 	    {ok, Data, {no_status, <<>>}};
-	%% this can't be used into a SMF, because is "mapped" to meta-events
+	%% this can't be used into a SMF, because it's "mapped" to meta-events
 	15 -> %% FF -> meta-event
 	    io:fwrite("system reset~n"),
 	    {ok, Data, {no_status, <<>>}};
@@ -421,7 +416,7 @@ read_event(<<Code:4, Msg:4, Data/binary>>, _) when Code == ?EV_SYSEX ->
 read_event(<<V:8, Rest/binary>>, {status, <<S:8>>}) when V < 128 ->
     read_event(<<S, V, Rest/binary>>, {status, <<S>>});
 
-read_event(_, _) ->
+read_event(_, _RunninStatus) ->
     io:fwrite("unknown event~n"),
     {fail, <<>>, {no_status, <<>>}}.
 
@@ -443,10 +438,10 @@ parse_events(TrackEvents, RunningStatus) when byte_size(TrackEvents) > 0 ->
 	    {fail, []}
     end;
 
-parse_events(<<>>, _) ->
+parse_events(<<>>, _RunningStatus) ->
     {ok, []};
 
-parse_events(_, _) ->
+parse_events(_, _RunningStatus) ->
     io:fwrite("what?~n"),
     {ok, []}.
 
